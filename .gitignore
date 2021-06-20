@@ -1,2 +1,9 @@
- 
+
 botconf
+
+build/
+cache/
+gradle/
+.gradle/
+.idea/
+out/

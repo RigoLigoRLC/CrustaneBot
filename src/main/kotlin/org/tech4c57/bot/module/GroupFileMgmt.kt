@@ -19,8 +19,8 @@ class GroupFileMgmt(bot: Bot) : ModuleBase(bot) {
             if(match != null) {
                 val segs = match.groupValues.filter { it != "" } // Why????
                 when(segs.size) {
-                    5, 6 -> sendCommandUsage(subject, segs[4])
-                    7 -> executeCommand(subject, segs[4], segs[6], sender)
+                    4, 5 -> sendCommandUsage(subject, segs[3])
+                    6 -> executeCommand(subject, segs[3], segs[5], sender)
                     else -> sendUsage(subject)
                 }
             }
