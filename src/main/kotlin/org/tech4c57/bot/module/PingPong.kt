@@ -5,6 +5,7 @@ import net.mamoe.mirai.event.events.FriendMessageEvent
 import net.mamoe.mirai.event.events.GroupMessageEvent
 import net.mamoe.mirai.event.events.GroupTempMessageEvent
 import net.mamoe.mirai.event.events.MessageEvent
+import org.tech4c57.bot.CmdParser
 
 class PingPong(bot: Bot) : ModuleBase(bot) {
     private val eventChannel = bot.eventChannel.filterIsInstance<MessageEvent>()
@@ -14,11 +15,11 @@ class PingPong(bot: Bot) : ModuleBase(bot) {
                 subject.sendMessage("Pong!")
         }
         eventChannel.subscribeAlways<GroupTempMessageEvent> {
-            if(message.contentToString() == "%ping")
+            if(CmdParser.parseZeroArg(message.contentToString()).commandName == "ping")
                 subject.sendMessage("Pong!")
         }
         eventChannel.subscribeAlways<FriendMessageEvent> {
-            if(message.contentToString() == "%ping")
+            if(CmdParser.parseZeroArg(message.contentToString()).commandName == "ping")
                 subject.sendMessage("Pong!")
         }
     }

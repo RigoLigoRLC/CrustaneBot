@@ -7,20 +7,19 @@ import net.mamoe.mirai.contact.isAdministrator
 import net.mamoe.mirai.event.events.GroupMessageEvent
 import net.mamoe.mirai.event.events.MessageEvent
 import net.mamoe.mirai.event.nextEventOrNull
+import org.tech4c57.bot.CmdParser
 import kotlin.coroutines.suspendCoroutine
 
 class GroupFileMgmt(bot: Bot) : ModuleBase(bot) {
     private val eventChannel = bot.eventChannel.filterIsInstance<MessageEvent>()
-    private val cmdRegex by lazy { Regex("""^\s*%fm(:(([a-z]+)(:(.+)?)?)?)?$""") }
 
     init {
         eventChannel.subscribeAlways<GroupMessageEvent> {
-            val match = cmdRegex.matchEntire(message.contentToString())
-            if(match != null) {
-                val segs = match.groupValues.filter { it != "" } // Why????
-                when(segs.size) {
-                    4, 5 -> sendCommandUsage(subject, segs[3])
-                    6 -> executeCommand(subject, segs[3], segs[5], sender)
+            val cmd = CmdParser.parse(message.contentToString())
+            if(cmd.commandName == "fm") {
+                when(cmd.params.size) {
+                    1 -> sendCommandUsage(subject, cmd.params[0])
+                    2 -> executeCommand(subject, cmd.params[0], cmd.params[1], sender)
                     else -> sendUsage(subject)
                 }
             }
@@ -29,7 +28,7 @@ class GroupFileMgmt(bot: Bot) : ModuleBase(bot) {
 
     suspend fun sendUsage(subject: Group) {
         subject.sendMessage("命令 %fm: 文件管理\n" +
-                "%fm:子命令:参数\n" +
+                "%fm 子命令 参数\n" +
                 "mkdir - 新建文件夹\n" +
                 "rmdir - 删除空文件夹\n" +
                 "rm - 删除文件/递归删除文件夹")
@@ -40,6 +39,10 @@ class GroupFileMgmt(bot: Bot) : ModuleBase(bot) {
             "mkdir" -> "新建一个名称与参数相同的文件夹。"
             "rmdir" -> "删除名称与参数相同的文件夹。"
             "rm" -> "删除名称与参数相同的文件或文件夹及其内容。"
+            "" -> {
+                sendUsage(subject)
+                return
+            }
             else -> "该子命令不合法。"
         }
         subject.sendMessage("%fm 子命令$subcmd：$msg")
@@ -84,11 +87,11 @@ class GroupFileMgmt(bot: Bot) : ModuleBase(bot) {
                     subject == it.subject && it.sender.id == invoker.id && it.message.contentToString().startsWith("%")
                 }
                 if(confirm != null) {
-                    when(confirm.message.contentToString()) {
-                        "%yes", "%confirm", "%ok" -> {
+                    when(CmdParser.parseZeroArg(confirm.message.contentToString()).commandName) {
+                        "yes", "confirm", "ok" -> {
                             subject.sendMessage(if (oper.delete()) "成功删除了“$operand”。" else "“$operand”无法被删除。")
                         }
-                        "%no", "%cancel" -> subject.sendMessage("删除操作已取消。")
+                        "no", "cancel" -> subject.sendMessage("删除操作已取消。")
                         else -> subject.sendMessage("指令不正确；操作已取消。")
                     }
                 } else {

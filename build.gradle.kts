@@ -14,11 +14,16 @@ repositories {
 dependencies {
     // KotlinX Coroutine
     api("org.jetbrains.kotlinx", "kotlinx-coroutines-core", "1.5.0")
+    api("org.junit.jupiter:junit-jupiter-api:5.3.1")
 
     // Mirai
     val miraiVersion = "2.6.6"
     api("net.mamoe", "mirai-core-api", miraiVersion)     // For compilation
     runtimeOnly("net.mamoe", "mirai-core", miraiVersion) // For runtime
+}
+
+tasks.test {
+    useJUnitPlatform()
 }
 
 tasks.withType<KotlinCompile>() {
