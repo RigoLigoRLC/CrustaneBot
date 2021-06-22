@@ -3,6 +3,7 @@ package org.tech4c57.bot
 import net.mamoe.mirai.network.LoginFailedException
 import org.tech4c57.bot.module.GroupCommands
 import org.tech4c57.bot.module.GroupFileMgmt
+import org.tech4c57.bot.module.GroupTempFileClean
 import org.tech4c57.bot.module.PingPong
 
 suspend fun main(args: Array<String>) {
@@ -40,4 +41,9 @@ suspend fun main(args: Array<String>) {
     val modPing = PingPong(botFoundation.bot)
     val modFM = GroupFileMgmt(botFoundation.bot)
     val modGrpGeneral = GroupCommands(botFoundation.bot)
+    val modTmpFileMgmt = GroupTempFileClean(botFoundation.bot)
+
+    modTmpFileMgmt.CreateBinForGroups()
+
+    botFoundation.bot.join() // So the bot coroutine doesn't exit until bot is terminated
 }

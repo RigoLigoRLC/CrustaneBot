@@ -81,7 +81,7 @@ class GroupFileMgmt(bot: Bot) : ModuleBase(bot) {
                 subject.sendMessage("“$operand”是文件夹，请确认确实要删除它，以及其中的" +
                         "${oper.listFilesCollection().size}个文件。")
                 val confirm = nextEventOrNull<GroupMessageEvent>(timeoutMillis = 10_000) {
-                    it.sender.id == invoker.id && it.message.contentToString().startsWith("%")
+                    subject == it.subject && it.sender.id == invoker.id && it.message.contentToString().startsWith("%")
                 }
                 if(confirm != null) {
                     when(confirm.message.contentToString()) {
