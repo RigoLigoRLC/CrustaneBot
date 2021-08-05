@@ -63,6 +63,7 @@ object CmdParser {
                         when(iec) {
                             '"' -> ret += '"'
                             '\\' -> ret += '\\'
+                            'n' -> ret += '\n'
                             else -> {
                                 ret += ic
                                 ret += iec

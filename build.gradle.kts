@@ -14,6 +14,7 @@ repositories {
 dependencies {
     // KotlinX Coroutine
     api("org.jetbrains.kotlinx", "kotlinx-coroutines-core", "1.5.0")
+    api("org.mongodb", "mongodb-driver", "3.12.9")
     api("org.junit.jupiter:junit-jupiter-api:5.3.1")
 
     // Mirai

@@ -2,12 +2,11 @@ package org.tech4c57.bot
 
 import net.mamoe.mirai.BotFactory
 import net.mamoe.mirai.utils.BotConfiguration
-import org.tech4c57.bot.module.ModuleBase
 import java.io.File
 import java.nio.file.FileSystemException
 
 class Foundation constructor(config: Map<String, String>) {
-    val botconfig = config
+    internal val botconfig = config
     val bot = BotFactory.newBot(botconfig["qqid"]!!.toLong(),
             botconfig["qqpassword"]!!,
             BotConfiguration {

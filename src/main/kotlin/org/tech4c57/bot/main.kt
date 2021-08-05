@@ -1,10 +1,12 @@
 package org.tech4c57.bot
 
 import net.mamoe.mirai.network.LoginFailedException
+import org.tech4c57.bot.module.EmergencyStop
 import org.tech4c57.bot.module.GroupCommands
-import org.tech4c57.bot.module.GroupFileMgmt
 import org.tech4c57.bot.module.GroupTempFileClean
+//import org.tech4c57.bot.module.GroupTempFileClean
 import org.tech4c57.bot.module.PingPong
+import java.util.*
 
 suspend fun main(args: Array<String>) {
     if(args.isEmpty()) {
@@ -31,6 +33,7 @@ suspend fun main(args: Array<String>) {
         println("Open config file ${args[0]} failed, reason: ${e.message}.")
         return;
     }
+
     val botFoundation = Foundation(config)
     try { botFoundation.login() } catch (e: LoginFailedException) {
         println("Login failed! Message: ${e.message}")
@@ -38,12 +41,16 @@ suspend fun main(args: Array<String>) {
     }
 
     // Register modules
-    val modPing = PingPong(botFoundation.bot)
-    val modFM = GroupFileMgmt(botFoundation.bot)
-    val modGrpGeneral = GroupCommands(botFoundation.bot)
-    val modTmpFileMgmt = GroupTempFileClean(botFoundation.bot)
-
-    modTmpFileMgmt.CreateBinForGroups()
+    ModuleHolderCore.registerModule(GroupCommands(botFoundation), EnumSet.of(ModuleHolderCore.SubscribeTarget.GroupMsg))
+    ModuleHolderCore.registerModule(PingPong(botFoundation),
+                                EnumSet.of(ModuleHolderCore.SubscribeTarget.GroupMsg,
+                                           ModuleHolderCore.SubscribeTarget.FriendMsg,
+                                           ModuleHolderCore.SubscribeTarget.TemporaryMsg))
+    ModuleHolderCore.registerModule(EmergencyStop(botFoundation, botFoundation.botconfig["ownerqqid"]?.toLong() ?: 0),
+        EnumSet.of(ModuleHolderCore.SubscribeTarget.GroupMsg,
+                   ModuleHolderCore.SubscribeTarget.FriendMsg))
+    ModuleHolderCore.registerModule(GroupTempFileClean(botFoundation), EnumSet.of(ModuleHolderCore.SubscribeTarget.GroupMsg))
+    ModuleHolderCore.subscribe(botFoundation.bot)
 
     botFoundation.bot.join() // So the bot coroutine doesn't exit until bot is terminated
 }

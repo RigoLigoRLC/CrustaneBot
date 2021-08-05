@@ -1,22 +1,55 @@
 package org.tech4c57.bot.module
 
-import kotlinx.coroutines.flow.collect
-import net.mamoe.mirai.Bot
+import kotlinx.coroutines.flow.toList
 import net.mamoe.mirai.contact.Group
 import net.mamoe.mirai.contact.Member
 import net.mamoe.mirai.contact.isOperator
 import net.mamoe.mirai.contact.nameCardOrNick
 import net.mamoe.mirai.event.events.GroupMessageEvent
+import net.mamoe.mirai.event.events.MessageEvent
 import net.mamoe.mirai.event.nextEventOrNull
 import net.mamoe.mirai.message.data.FileMessage
 import net.mamoe.mirai.message.data.MessageChain
 import net.mamoe.mirai.message.data.MessageSource.Key.recall
 import org.tech4c57.bot.CmdParser
+import org.tech4c57.bot.Foundation
 
-class GroupTempFileClean(private val bot: Bot) : ModuleBase(bot) {
-    private val channel = bot.eventChannel.filterIsInstance<GroupMessageEvent>()
+class GroupTempFileClean(private val env: Foundation) : ModuleBase(env) {
 
-    val matches: Array<String> = arrayOf(
+    override fun commandName(): String {
+        return "gc"
+    }
+
+    override suspend fun execCommand(param: List<String>, evt: MessageEvent) {
+        if(evt is GroupMessageEvent);
+        else
+            return
+
+        when(param.size) {
+            0 -> sendUsage(evt.group)
+            else -> execCommand(evt.group, evt.sender, param)
+        }
+
+        // Check is file upload
+        for(i in evt.message) // Metadata is inside the chain, need to iterate through the entire thing
+            if(i is FileMessage) {
+                // Match file name regex
+                for(j in matches) {
+                    if (i.name.matches(j.toRegex())) {
+                        MoveToBin(evt.sender, evt.subject, i.name, i.id, j)
+                        return
+                    }
+                }
+
+                // Match jpg/png size < 500KB
+                if(i.name.matches(""".*\.(jpg|png)""".toRegex()) && i.size < 500 * 1024) {
+                    MoveToBin(evt.sender, evt.subject, i.name, i.id, "jpg/png < 500KiB")
+                    return
+                }
+            }
+    }
+
+    private val matches: Array<String> = arrayOf(
         """[0-9a-f]{31}.jpg""",
         """QQ图片[0-9]+.jpg""",
         """[A-Z0-9\[\]{}_!@#$%()<>,\.~`]{23}.jpg""",
@@ -28,37 +61,6 @@ class GroupTempFileClean(private val bot: Bot) : ModuleBase(bot) {
         """[0-9-_ ]+.(jpg|png|mp4|mkv)""",
         """.*.gif"""
     )
-
-    init {
-        channel.subscribeAlways<GroupMessageEvent> {
-            // Check GC command
-            val cmd = CmdParser.parse(message.contentToString())
-            if(cmd.commandName == "gc") {
-                when(cmd.params.size) {
-                    0 -> sendUsage(group)
-                    else -> execCommand(group, sender, cmd.commandName, cmd.params)
-                }
-            }
-
-            // Check is file upload
-            for(i in message) // Metadata is inside the chain, need to iterate through the entire thing
-                if(i is FileMessage) {
-                    // Match file name regex
-                    for(j in matches) {
-                        if (i.name.matches(j.toRegex())) {
-                            MoveToBin(sender, subject, i.name, i.id, j)
-                            return@subscribeAlways
-                        }
-                    }
-
-                    // Match jpg/png size < 500KB
-                    if(i.name.matches(""".*\.(jpg|png)""".toRegex()) && i.size < 500 * 1024) {
-                        MoveToBin(sender, subject, i.name, i.id, "jpg/png < 500KiB")
-                        return@subscribeAlways
-                    }
-                }
-        }
-    }
 
     private suspend fun MoveToBin(sender: Member, group: Group, fileName: String, fileId: String?, rule: String) {
         val sentMsg = group.sendMessage("“${sender.nameCardOrNick}”发送的文件“${fileName}”判定为垃圾文件，" +
@@ -95,7 +97,7 @@ class GroupTempFileClean(private val bot: Bot) : ModuleBase(bot) {
 
     suspend fun CreateBinForGroups() {
         // Prepare a temp file bin
-        for(group in bot.groups/*.filter { it.id == 857409227L }*/) // todo:Add an "enabled" database
+        for(group in env.bot.groups/*.filter { it.id == 857409227L }*/) // todo:Add an "enabled" database
             createBinForGroup(group, false)
     }
 
@@ -117,22 +119,24 @@ class GroupTempFileClean(private val bot: Bot) : ModuleBase(bot) {
         }
     }
 
-    suspend fun dumpBin(group: Group, invoker: Member) {
+    private suspend fun dumpBin(group: Group, invoker: Member) {
         val bin = group.filesRoot.resolve("/CrustaneTempBin")
         var size = 0L
         var count = 0L
         if(!invoker.isOperator()) {
             group.sendMessage("您不是管理员，无权操作清理收集箱。")
+            return
         }
         if(!group.botPermission.isOperator()) {
             group.sendMessage("Crustane没有管理员权限，不能清理收集箱。")
+            return
         }
         if(!bin.exists()) {
             group.sendMessage("Crustane还没有收集箱。请使用%gc init创建收集箱。")
             return
         }
         try {
-            bin.listFiles().collect {
+            bin.listFiles().toList().forEach {
                 size += it.getInfo()?.length ?: 0
                 it.delete()
                 if(++count % 50L == 0L) {
@@ -146,7 +150,7 @@ class GroupTempFileClean(private val bot: Bot) : ModuleBase(bot) {
         group.sendMessage("共清理了${count}个文件，总大小${size/1_000_000.0}MiB。")
     }
 
-    suspend fun sendUsage(group: Group) {
+    private suspend fun sendUsage(group: Group) {
         group.sendMessage("命令 gc: 群文件垃圾收集\n" +
                 "%gc 子命令 [参数]\n" +
                 "init - 为群聊创建收集箱（需机器人有管理员权限）\n" +
@@ -170,7 +174,7 @@ class GroupTempFileClean(private val bot: Bot) : ModuleBase(bot) {
         group.sendMessage("%gc 子命令$subCmd：$msg")
     }
 
-    suspend fun execCommand(group: Group, invoker: Member, cmd: String, params: MutableList<String>) {
+    private suspend fun execCommand(group: Group, invoker: Member, params: List<String>) {
         when(params[0]) {
             "init" -> createBinForGroup(group)
             "appeal" -> return
