@@ -1,10 +1,7 @@
 package org.tech4c57.bot.module
 
 import kotlinx.coroutines.flow.toList
-import net.mamoe.mirai.contact.Group
-import net.mamoe.mirai.contact.Member
-import net.mamoe.mirai.contact.isOperator
-import net.mamoe.mirai.contact.nameCardOrNick
+import net.mamoe.mirai.contact.*
 import net.mamoe.mirai.event.events.GroupMessageEvent
 import net.mamoe.mirai.event.events.MessageEvent
 import net.mamoe.mirai.event.nextEventOrNull
@@ -13,8 +10,10 @@ import net.mamoe.mirai.message.data.MessageChain
 import net.mamoe.mirai.message.data.MessageSource.Key.recall
 import org.tech4c57.bot.CmdParser
 import org.tech4c57.bot.Foundation
+import org.tech4c57.bot.permissions.CmdPermission
 
 class GroupTempFileClean(private val env: Foundation) : ModuleBase(env) {
+    override val hasMessageFilter = true
 
     override fun commandName(): String {
         return "gc"
@@ -29,24 +28,30 @@ class GroupTempFileClean(private val env: Foundation) : ModuleBase(env) {
             0 -> sendUsage(evt.group)
             else -> execCommand(evt.group, evt.sender, param)
         }
+    }
 
+    override suspend fun messageFilter(evt: MessageEvent): Boolean {
+        if(evt !is GroupMessageEvent || !evt.group.botPermission.isAdministrator())
+            return false
         // Check is file upload
-        for(i in evt.message) // Metadata is inside the chain, need to iterate through the entire thing
-            if(i is FileMessage) {
-                // Match file name regex
-                for(j in matches) {
-                    if (i.name.matches(j.toRegex())) {
-                        MoveToBin(evt.sender, evt.subject, i.name, i.id, j)
-                        return
-                    }
-                }
+        return evt.message.filterIsInstance<FileMessage>().isNotEmpty()
+    }
 
-                // Match jpg/png size < 500KB
-                if(i.name.matches(""".*\.(jpg|png)""".toRegex()) && i.size < 500 * 1024) {
-                    MoveToBin(evt.sender, evt.subject, i.name, i.id, "jpg/png < 500KiB")
-                    return
+    override suspend fun filteredMessageHandler(evt: MessageEvent) {
+        if(evt !is GroupMessageEvent) return // Ensure it is group message again
+        evt.message.filterIsInstance<FileMessage>().forEach {
+            // Match file name regex
+            for(j in matches) {
+                if (it.name.matches(j.toRegex())) {
+                    MoveToBin(evt.sender, evt.subject, it.name, it.id, j)
                 }
             }
+
+            // Match jpg/png size < 500KB
+            if(it.name.matches(""".*\.(jpg|png)""".toRegex()) && it.size < 500 * 1024) {
+                MoveToBin(evt.sender, evt.subject, it.name, it.id, "jpg/png < 500KiB")
+            }
+        }
     }
 
     private val matches: Array<String> = arrayOf(

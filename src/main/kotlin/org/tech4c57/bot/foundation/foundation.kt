@@ -1,7 +1,10 @@
 package org.tech4c57.bot
 
+import net.mamoe.mirai.Bot
 import net.mamoe.mirai.BotFactory
+import net.mamoe.mirai.message.data.MessageChain
 import net.mamoe.mirai.utils.BotConfiguration
+import org.tech4c57.bot.foundation.BotDatabase
 import java.io.File
 import java.nio.file.FileSystemException
 
@@ -30,6 +33,7 @@ class Foundation constructor(config: Map<String, String>) {
         bot.login()
         bot.getFriend(botconfig["ownerqqid"]?.toLong() ?: 0)
             ?.sendMessage(botconfig["greetings"] ?: "Crustane is now online.")
+        botsingleton = bot
     }
 
     companion object {
@@ -40,7 +44,23 @@ class Foundation constructor(config: Map<String, String>) {
             for (i in file.readLines())
                 if ('=' in i)
                     r[i.substringBefore('=')] = i.substringAfter('=')
+
+            ownerId = r.getOrDefault("ownerqqid", "0").toLong()
+
             return r
+        }
+
+        lateinit var db: BotDatabase
+
+        private var ownerId: Long = 0
+        lateinit var botsingleton: Bot
+
+        suspend fun tellOwner(msg: MessageChain) {
+            botsingleton.getFriend(ownerId)?.sendMessage(msg) ?: return
+        }
+
+        fun isOwner(id: Long): Boolean {
+            return id == ownerId
         }
     }
 }

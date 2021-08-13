@@ -9,7 +9,7 @@ class PingPong(bot: Foundation) : ModuleBase(bot) {
         return "ping"
     }
 
-    override suspend fun execCommand(args: List<String>, evt: MessageEvent) {
+    override suspend fun execCommand(param: List<String>, evt: MessageEvent) {
         evt.subject.sendMessage("Pong!")
     }
 }
