@@ -18,6 +18,13 @@ import org.tech4c57.bot.utils.replyPlainMsg
 import java.time.Instant
 import java.time.ZoneId
 
+data class FlashImageRecord(
+    val group: Long,
+    val image: String,
+    val sender: Long,
+    val time: Long
+)
+
 class GetPicture(foundation: Foundation): ModuleBase(foundation) {
     val store = BotDatabase.db.getCommandCollection("flash_image")
 
@@ -31,12 +38,12 @@ class GetPicture(foundation: Foundation): ModuleBase(foundation) {
                 if(ensureParamCount(evt, param.size == 1)) {
                     when(param[0]) {
                         "see" -> {
-                            val result = store.aggregate(listOf(
+                            val result = store.aggregate<FlashImageRecord>(listOf(
                                 Aggregates.match(Filters.eq("group", evt.subject.id)),
                                 Aggregates.sort(Sorts.descending("time")),
                                 Aggregates.limit(5)
                             ))
-                            val cursor = result.cursor()
+                            val cursor = result.toList().iterator()
 
                             if(cursor.hasNext()) {
                                 val queryMsg = MessageChainBuilder()
@@ -44,11 +51,11 @@ class GetPicture(foundation: Foundation): ModuleBase(foundation) {
                                 while(cursor.hasNext()) {
                                     val item = cursor.next()
                                     queryMsg.add(">" +
-                                            Instant.ofEpochSecond(item["time"].toString().toLong())
+                                            Instant.ofEpochSecond(item.time)
                                                 .atZone(ZoneId.of("UTC+8")).toLocalDateTime().toString() +
-                                            " ${evt.subject.getMember(item["sender"].toString().toLong())?.nick ?: "（用户不存在）"}" +
-                                            "（${item["sender"]}）" +
-                                            "，ID=${item["image"].toString()}\n")
+                                            " ${evt.subject.getMember(item.sender)?.nick ?: "（用户不存在）"}" +
+                                            "（${item.sender}）" +
+                                            "，ID=${item.image}\n")
                                 }
 
                                 evt.subject.sendMessage(queryMsg.build())

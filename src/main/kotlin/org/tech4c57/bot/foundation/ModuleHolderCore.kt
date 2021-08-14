@@ -22,7 +22,7 @@ object ModuleHolderCore {
     private val msgFilterList: MutableList<MessageFilterInfo>
         = mutableListOf()
 
-    fun registerModule(module: ModuleBase, target: EnumSet<SubscribeTarget>): Boolean {
+    suspend fun registerModule(module: ModuleBase, target: EnumSet<SubscribeTarget>): Boolean {
         return if(module.commandName() in cmdIdList || target.isEmpty())
             false
         else {
@@ -86,11 +86,11 @@ object ModuleHolderCore {
         }
     }
 
-    fun refreshPermission(cmd: String) {
+    suspend fun refreshPermission(cmd: String) {
         cmdIdList[cmd]?.module?.updatePermission()
     }
 
-    fun refreshAllPermissions() {
+    suspend fun refreshAllPermissions() {
         cmdIdList.forEach {
             it.value.module.updatePermission()
         }

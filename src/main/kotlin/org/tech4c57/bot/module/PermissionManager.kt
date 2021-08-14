@@ -28,6 +28,18 @@ class PermissionManager(foundation: Foundation) : ModuleBase(foundation) {
 
         try {
             when (param[0]) {
+                "drop" -> {
+                    if (ensureParamCount(evt, param.size >= 2) && ensureCommandOperable(evt, param[1], param))
+                        successFailReply(evt, deletePermission(param[1]))
+                    return
+                }
+
+                "init" -> {
+                    if (ensureParamCount(evt, param.size >= 2) && ensureCommandOperable(evt, param[1], param))
+                        successFailReply(evt, deletePermission(param[1]))
+                    return
+                }
+
                 "enable" -> {
                     if (ensureParamCount(evt, param.size >= 2) && ensureCommandOperable(evt, param[1], param))
                         successFailReply(evt, toggleCommand(param[1], true))
@@ -126,27 +138,35 @@ class PermissionManager(foundation: Foundation) : ModuleBase(foundation) {
         }
     }
 
-    private fun toggleCommand(cmd: String, enable: Boolean): Boolean {
+    private suspend fun deletePermission(cmd: String): Boolean {
+        return BotDatabase.db.deletePermission(cmd)
+    }
+
+    private suspend fun initializePermission(cmd: String): Boolean {
+        return BotDatabase.db.deletePermission(cmd)
+    }
+
+    private suspend fun toggleCommand(cmd: String, enable: Boolean): Boolean {
         return BotDatabase.db.setGlobalControl(cmd, enable)
     }
 
-    private fun toggleGroupWhitelist(cmd: String, set: Boolean): Boolean {
+    private suspend fun toggleGroupWhitelist(cmd: String, set: Boolean): Boolean {
         return BotDatabase.db.setGroupControlWhitelist(cmd, set)
     }
 
-    private fun toggleFriendWhitelist(cmd: String, set: Boolean): Boolean {
+    private suspend fun toggleFriendWhitelist(cmd: String, set: Boolean): Boolean {
         return BotDatabase.db.setFriendMsgWhitelist(cmd, set)
     }
 
-    private fun setCommandLevel(cmd: String, level: Int?): Boolean {
+    private suspend fun setCommandLevel(cmd: String, level: Int?): Boolean {
         return if(level != null) BotDatabase.db.setGlobalPrivilegeLevel(cmd, level) else false
     }
 
-    private fun setCommandLevelInGroup(cmd: String, level: Int?, group: Long): Boolean {
+    private suspend fun setCommandLevelInGroup(cmd: String, level: Int?, group: Long): Boolean {
         return if(level != null) BotDatabase.db.setGroupSpecificPrivilegeLevel(cmd, group, level) else false
     }
 
-    private fun unsetCommandLevelInGroup(cmd: String, group: Long): Boolean {
+    private suspend fun unsetCommandLevelInGroup(cmd: String, group: Long): Boolean {
         return BotDatabase.db.unsetGroupSpecificPrivilegeLevel(cmd, group)
     }
 

@@ -5,7 +5,8 @@ plugins {
 }
 
 group = "org.tech4c57"
-version = "0.0.1"
+var version_ = "0.0.1"
+version = version_
 
 repositories {
     mavenCentral()
@@ -14,7 +15,11 @@ repositories {
 dependencies {
     // KotlinX Coroutine
     api("org.jetbrains.kotlinx", "kotlinx-coroutines-core", "1.5.0")
+
+    // Database connection
     api("org.mongodb", "mongodb-driver", "3.12.9")
+    implementation("org.litote.kmongo", "kmongo-coroutine", "4.2.8")
+
     api("org.junit.jupiter:junit-jupiter-api:5.3.1")
 
     // Mirai
@@ -45,7 +50,7 @@ tasks.register<Jar>("crustane-jar") {
         "META-INF/*.md"
     )
 
-    archiveFileName.set("bot-$version.jar")
+    archiveFileName.set("bot-$version_.jar")
     manifest {
         attributes["Main-Class"] = "org.tech4c57.bot.MainKt"
     }

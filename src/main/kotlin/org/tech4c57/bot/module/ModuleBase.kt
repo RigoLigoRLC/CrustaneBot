@@ -16,7 +16,7 @@ abstract class ModuleBase(bot: Foundation) {
     
     open fun checkPermission(evt: MessageEvent, perm: CmdPermission = this.perm, level: Int) =
         CmdPermission.defaultCheckPermission(evt, perm, level)
-    open fun updatePermission() {
+    open suspend fun updatePermission() {
         perm =  BotDatabase.db.fetchCommandPermFromDatabase(commandName())
     }
 }
